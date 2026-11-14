@@ -11,6 +11,7 @@
 - `conversation_user_states`
 - `messages`
 - `transactions`
+- `transaction_events` (append-only audit history)
 - `reviews`
 - `favorites`
 - `blocks`
@@ -45,6 +46,7 @@ erDiagram
     PROFILES ||--o{ TRANSACTIONS : seller
     SHOPS ||--o{ TRANSACTIONS : sold_through
 
+    TRANSACTIONS ||--o{ TRANSACTION_EVENTS : records
     TRANSACTIONS ||--o{ REVIEWS : produces
     PROFILES ||--o{ REVIEWS : writes
     PROFILES ||--o{ REVIEWS : receives

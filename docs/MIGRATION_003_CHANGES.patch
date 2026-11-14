@@ -1,0 +1,157 @@
+--- original/003.sql
++++ corrected/003.sql
+@@ -13,8 +13,34 @@
+ -- * Supabase Realtime Postgres Changes may deliver new messages to subscribers
+ --   who can SELECT those rows under RLS. Persistent history stays in Postgres.
+ --
++-- REVIEWER CORRECTIONS (2026-11-10)
++-- * Fail early if Migration 002's eligibility helper is not present.
++-- * Limit the ACTUAL stored message body to 4,000 characters and reject
++--   whitespace-only messages, without trimming accepted messages.
++-- * Use wall-clock message creation time and monotone inbox timestamps.
++-- * Provisional policy: new conversations require ACTIVE listings; existing
++--   conversations may continue while RESERVED; SOLD/REMOVED conclude chats.
++--   This policy must be approved in domain docs before production rollout.
++--
+ -- Review against existing schema and validate in a disposable local Supabase
+ -- database before application to production.
++
++-- ======================================================================
++-- 0. FAIL-FAST PREREQUISITE CHECK
++-- ======================================================================
++-- This helper IS defined by the original Migration 002 in our bundle.
++-- If it is missing from the actual repository, reconcile Migration 002
++-- instead of copying a different definition into Migration 003.
++do $$
++begin
++  if to_regclass('public.listings') is null
++     or to_regprocedure('private.shop_is_publicly_eligible(uuid)') is null then
++    raise exception
++      'MIGRATION_002_PREREQUISITES_MISSING: public.listings or private.shop_is_publicly_eligible(uuid)'
++      using errcode = 'P0001';
++  end if;
++end;
++$$;
+ 
+ -- ======================================================================
+ -- 1. ENUMS
+@@ -89,10 +115,13 @@
+   type public.message_type not null default 'text',
+   body text not null,
+   client_message_id uuid,
+-  created_at timestamptz not null default now(),
+-
++  created_at timestamptz not null default clock_timestamp(),
++
++  -- The stored text (not a trimmed copy) must be <= 4,000 characters.
++  -- A positive-length body may still be all spaces/tabs/newlines, so
++  -- non-whitespace content is a separate requirement.
+   constraint messages_content_length
+-    check (char_length(btrim(body)) between 1 and 4000),
++    check (char_length(body) between 1 and 4000 and body ~ '[^[:space:]]'),
+   constraint messages_sender_matches_type
+     check (
+       (type = 'text' and sender_user_id is not null and client_message_id is not null)
+@@ -160,13 +189,21 @@
+ set search_path = ''
+ as $$
+ begin
++  -- Never move an inbox's ordering timestamp backwards, even if an
++  -- older transaction commits after a newer one.
+   update public.conversations
+-  set last_message_at = new.created_at
++  set last_message_at = greatest(
++    coalesce(last_message_at, '-infinity'::timestamptz),
++    new.created_at
++  )
+   where id = new.conversation_id;
+ 
+   if new.type = 'text' then
+     update public.conversation_user_states
+-    set last_read_at = new.created_at,
++    set last_read_at = greatest(
++          coalesce(last_read_at, '-infinity'::timestamptz),
++          new.created_at
++        ),
+         hidden_at = null,
+         archived_at = null
+     where conversation_id = new.conversation_id
+@@ -187,7 +224,8 @@
+   for each row execute function private.on_text_message_insert();
+ 
+ -- When a Listing is SOLD or REMOVED, conclude *all* its Conversations.
+--- RESERVED is deliberately not terminal: interested buyers may still chat.
++-- RESERVED is deliberately not terminal: existing buyers may still chat.
++-- Starting a NEW conversation for a RESERVED listing is provisionally blocked.
+ -- This also catches Migration 002's existing remove_listing() RPC without
+ -- rewriting or replacing the previously authored function.
+ create function private.conclude_listing_conversations()
+@@ -200,7 +238,7 @@
+      and old.status is distinct from new.status then
+     update public.conversations
+     set status = 'concluded',
+-        concluded_at = now()
++        concluded_at = clock_timestamp()
+     where listing_id = new.id and status = 'active';
+   end if;
+   return new;
+@@ -286,7 +324,9 @@
+     raise exception 'CANNOT_MESSAGE_OWN_LISTING' using errcode = 'P0001';
+   end if;
+ 
+-  if v_listing.status not in ('active', 'reserved')
++  -- PROVISIONAL PRODUCT DECISION: prevent brand-new inquiries once a
++  -- listing is RESERVED. Existing participants may continue messaging.
++  if v_listing.status <> 'active'
+      or v_listing.moderation_status <> 'clear'
+      or not private.shop_is_publicly_eligible(v_listing.shop_id) then
+     raise exception 'LISTING_NOT_AVAILABLE_FOR_CHAT' using errcode = 'P0001';
+@@ -343,7 +383,9 @@
+     raise exception 'CLIENT_MESSAGE_ID_REQUIRED' using errcode = 'P0001';
+   end if;
+ 
+-  if p_body is null or char_length(btrim(p_body)) not between 1 and 4000 then
++  if p_body is null
++     or char_length(p_body) not between 1 and 4000
++     or p_body !~ '[^[:space:]]' then
+     raise exception 'INVALID_MESSAGE_BODY' using errcode = 'P0001';
+   end if;
+ 
+@@ -463,19 +505,32 @@
+       raise exception 'INVALID_INBOX_ACTION' using errcode = 'P0001';
+     end if;
+     update public.conversation_user_states
+-    set archived_at = case when p_value then now() else null end
++    set archived_at = case when p_value then clock_timestamp() else null end
+     where conversation_id = p_conversation_id and user_id = v_user_id;
+   elsif p_action = 'hide' then
+     if p_value is null then
+       raise exception 'INVALID_INBOX_ACTION' using errcode = 'P0001';
+     end if;
+     update public.conversation_user_states
+-    set hidden_at = case when p_value then now() else null end
++    set hidden_at = case when p_value then clock_timestamp() else null end
+     where conversation_id = p_conversation_id and user_id = v_user_id;
+   elsif p_action = 'read' then
+-    update public.conversation_user_states
+-    set last_read_at = now()
+-    where conversation_id = p_conversation_id and user_id = v_user_id;
++    -- Read advances only to the newest message currently recorded for
++    -- this conversation, never to an unrelated transaction start time.
++    -- A future client message cursor can make read acknowledgements more
++    -- exact when live messages race against inbox refreshes.
++    update public.conversation_user_states cus
++    set last_read_at = greatest(
++      coalesce(cus.last_read_at, '-infinity'::timestamptz),
++      coalesce(
++        (select coalesce(c.last_message_at, c.created_at)
++         from public.conversations c
++         where c.id = p_conversation_id),
++        '-infinity'::timestamptz
++      )
++    )
++    where cus.conversation_id = p_conversation_id
++      and cus.user_id = v_user_id;
+   else
+     raise exception 'INVALID_INBOX_ACTION' using errcode = 'P0001';
+   end if;

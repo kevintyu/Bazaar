@@ -454,3 +454,79 @@ remove_listing()
 ```
 
 Do not introduce messaging/Transaction/Review complexity until this vertical slice works end-to-end.
+
+## Messaging operations (Migration 003)
+
+Owner-confirmed 2026-11-11: a RESERVED Listing blocks new Conversations while
+all existing Conversations may continue, including those of other buyers.
+
+### startConversation() / start_conversation()
+
+Requires an authenticated active buyer distinct from the seller, an ACTIVE,
+CLEAR Listing, and an eligible Shop/seller. Buyer and seller identities are
+system-derived. Repeated requests return the existing buyer/listing Conversation
+only while these start eligibility checks pass. Calling start_conversation on a
+RESERVED Listing is rejected even for an existing buyer; reopen by reading the
+existing Conversation ID instead. It does not delete or conclude that Conversation.
+
+### sendMessage() / send_message()
+
+Only a Conversation participant may send. New text requires an active caller,
+active Conversation, ACTIVE or RESERVED Listing, CLEAR moderation and eligible
+Shop/seller. All existing buyers may continue during RESERVED. SOLD and REMOVED
+conclude Conversations and prevent new messages; participant history remains.
+Exact retries of an already committed sender/client-message-ID and body return
+the original message ID even after conclusion. Changed body or Conversation
+under the same sender/client-message-ID is rejected.
+
+Cancellation returning the Listing to ACTIVE reopens eligibility for new
+Conversations. Per-user archive/hide retains history and does not alter the
+other participant's inbox. No applied migration is rewritten for this decision.
+
+## Reservation/cancellation foundation (Migration 004, implemented locally)
+
+### reserveListing() / reserve_listing(p_conversation_id, p_request_id)
+
+Seller-only. Identities derive from the existing Conversation and Listing and
+`auth.uid()`. Requires ACTIVE/CLEAR Listing, active Conversation, eligible
+Shop/seller and active buyer. Atomically create a RESERVED Transaction, append
+its reservation audit event, and move Listing ACTIVE -> RESERVED. A unique index
+protects the single active Transaction even under competing requests.
+
+The client creates one request UUID per reservation intent and preserves it on
+transport retries. The (seller, request UUID) receipt is durable: exact retry
+returns the original Transaction ID even after cancellation; a different
+Conversation under the same key fails. A new reservation after cancellation
+uses a new request UUID. A retry never reserves again or mutates newer history.
+
+### cancelTransaction() / cancel_transaction(p_transaction_id, p_reason = null)
+
+Either participant may cancel a RESERVED Transaction before pickup. Atomic
+cancellation records actor/time/reason and an audit event, changes Transaction
+to CANCELLED, and returns Listing to ACTIVE. Cancelled records remain immutable;
+a later reservation creates a different Transaction. Nonparticipants cannot
+read or mutate the selected buyer's Transaction or its events.
+
+Owner-confirmed 2026-11-11: new cancellation fails with TRANSACTION_RESTRICTED
+if either participant account is not ACTIVE, the Shop/seller is ineligible, or
+Listing moderation is not CLEAR. No automatic cancellation or history deletion
+occurs; participants retain read access. Clear restrictions before retrying.
+
+Reason is optional free text for now; preselected options are deferred. The API
+accepts up to 1,000 characters, trims surrounding spaces, and maps empty text to
+null. Exact repeat by the same cancellation actor with the same normalized reason
+returns the existing receipt, including after a newer reservation. Another actor
+or changed reason receives CANCELLATION_REQUEST_CONFLICT; history is not rewritten.
+Returning an existing receipt is not a new cancellation and bypasses new-action
+eligibility checks.
+
+Lock order is Listing -> Transaction -> Conversation when applicable. Direct
+client writes to Transactions/events are revoked; RLS permits participant reads.
+The append-only audit event and Listing change share the RPC database transaction.
+
+### Explicitly not enabled by the foundation
+
+No pickup, buyer-confirmation, dispute, timeout or seller-finalization RPC exists.
+Although the status enum reserves those names, a CHECK constraint and transition
+guard allow only RESERVED/CANCELLED in this phase. A future migration must add
+approved policies, metadata and transitions. No default timeout was selected.

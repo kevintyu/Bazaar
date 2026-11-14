@@ -234,6 +234,23 @@ Rules:
 
 Conversation deletion should usually mean hiding it from that participant's inbox rather than destructive deletion.
 
+### Confirmed listing Conversation lifecycle
+
+Owner-confirmed on 2026-11-11; this replaces the provisional RESERVED policy.
+
+| Listing state | New Conversations | Existing Conversations |
+|---|---|---|
+| DRAFT | Blocked | Not applicable |
+| ACTIVE | Allowed | Messaging allowed |
+| RESERVED | Blocked | Messaging allowed for all existing participants |
+| SOLD | Blocked | Concluded, read-only history |
+| REMOVED | Blocked | Concluded, read-only history |
+
+Reservation does not limit existing messaging to the selected buyer. Other buyers
+who already have a Conversation may continue. Cancellation returning a Listing to
+ACTIVE permits new Conversations again. Account, moderation and Shop eligibility
+checks still apply; reservation does not bypass them.
+
 Conversation history supports disputes and transaction history.
 
 The structured Transaction is the official transaction record/receipt.
@@ -282,6 +299,16 @@ Cancellation:
 - moves Transaction to CANCELLED;
 - returns Listing to ACTIVE;
 - preserves cancelled Transaction history.
+
+Owner-confirmed 2026-11-11 for Migration 004:
+
+- A new cancellation is blocked while either participant account or the Shop is
+  restricted, or the Listing is UNDER_REVIEW. It can be retried after restrictions
+  clear; restrictions do not destroy the Transaction or its readable history.
+- Cancellation currently accepts optional free text. Preselected reason options
+  will be defined later, alongside a free-text reason; no taxonomy is chosen yet.
+- This restriction decision concerns cancellation only; pickup, confirmation,
+  dispute and blocking policies remain open where previously marked TBD.
 
 ### Pickup confirmation
 
@@ -476,7 +503,6 @@ Because meetup location exists only in chat in v1, meetup location is not used f
 - whether removed Listings can be restored;
 - whether sold Listings remain publicly visible;
 - reserved Listing visibility;
-- whether new buyers can message reserved Listings;
 - maximum image count;
 - which fields become immutable after reservation.
 
@@ -484,7 +510,7 @@ Because meetup location exists only in chat in v1, meetup location is not used f
 
 - retention period;
 - attachment types;
-- messaging after Transaction completion.
+- any future separate post-sale support conversation type (listing Conversations remain read-only after SOLD).
 
 ### Blocking
 

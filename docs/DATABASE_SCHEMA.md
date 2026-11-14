@@ -472,3 +472,18 @@ reviews
 blocks
 reports
 ```
+
+## Migration 004 implementation status (2026-11-11)
+
+The `transactions` section above describes the eventual lifecycle. The currently
+applied local foundation includes identity FKs, seller/request UUID uniqueness,
+RESERVED/CANCELLED status, reservation/cancellation timestamps, actor, optional
+free-text reason, and created/updated timestamps. Pickup, deadline, dispute and
+completion fields are deferred alongside their RPCs. The full enum exists, but
+`transactions_foundation_states` and the history guard reject other transitions.
+
+`transaction_events` stores append-only participant-readable reservation and
+cancellation events with actor, previous/new state, timestamp and cancellation
+reason. Trigger-generated events commit atomically with the operation. Direct
+client writes to both tables are revoked. Composite FKs bind Listing/Shop/seller
+and Conversation/Listing/buyer/seller identities. See MIGRATION_004_README.md.
