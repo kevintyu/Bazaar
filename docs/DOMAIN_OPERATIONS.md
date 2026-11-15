@@ -459,6 +459,8 @@ Do not introduce messaging/Transaction/Review complexity until this vertical sli
 
 Owner-confirmed 2026-11-11: a RESERVED Listing blocks new Conversations while
 all existing Conversations may continue, including those of other buyers.
+Reconfirmed 2026-11-14. SOLD/REMOVED prevent new messages while preserving
+participant history and per-user archive/hide/read operations.
 
 ### startConversation() / start_conversation()
 
@@ -530,3 +532,24 @@ No pickup, buyer-confirmation, dispute, timeout or seller-finalization RPC exist
 Although the status enum reserves those names, a CHECK constraint and transition
 guard allow only RESERVED/CANCELLED in this phase. A future migration must add
 approved policies, metadata and transitions. No default timeout was selected.
+
+### Reviewed future contract (not enabled)
+
+The DOMAIN_OPERATIONS_AMENDMENT.md proposal is reconciled as follows; existing
+reserve/cancel signatures, request UUID retries, 1,000-character cancellation
+reasons and restriction checks above remain authoritative.
+
+| Proposed command | Actor | Preconditions | Atomic result |
+|---|---|---|---|
+| mark_picked_up(transaction_id) | Seller | RESERVED Transaction and Listing | AWAITING_BUYER_CONFIRMATION with stored deadline and audit event |
+| confirm_pickup(transaction_id) | Buyer | AWAITING_BUYER_CONFIRMATION | COMPLETED, Listing SOLD, Conversations concluded, audit event |
+| dispute_pickup(transaction_id, reason) | Buyer | AWAITING_BUYER_CONFIRMATION | DISPUTED, Listing remains RESERVED, audit event |
+| finalize_unconfirmed_pickup(transaction_id) | Seller | AWAITING_BUYER_CONFIRMATION, stored deadline reached, no dispute | COMPLETED, Listing SOLD, Conversations concluded, audit event |
+
+Ordinary cancellation stops after pickup is marked. Disputes block seller
+finalization and require a future admin resolution operation. Deadlines, once
+set, must not change when operator configuration changes. A three-day default
+and manual seller finalization are candidate proposals, not enabled policy.
+Restriction rules for these future operations, admin dispute resolution and
+blocking behavior remain open. The amendment's unrestricted cancellation
+proposal conflicts with the existing owner-confirmed rule and is not adopted.

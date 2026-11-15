@@ -237,6 +237,9 @@ Conversation deletion should usually mean hiding it from that participant's inbo
 ### Confirmed listing Conversation lifecycle
 
 Owner-confirmed on 2026-11-11; this replaces the provisional RESERVED policy.
+Reconfirmed by the owner on 2026-11-14. The Conversation rules from
+DOMAIN_MODEL_AMENDMENT.md are incorporated here; they do not approve the
+candidate's provisional three-day pickup-confirmation window.
 
 | Listing state | New Conversations | Existing Conversations |
 |---|---|---|
@@ -252,6 +255,9 @@ ACTIVE permits new Conversations again. Account, moderation and Shop eligibility
 checks still apply; reservation does not bypass them.
 
 Conversation history supports disputes and transaction history.
+
+Each participant may still archive, hide or mark retained history as read after
+SOLD/REMOVED. Read-only refers to creating new messages, not personal inbox state.
 
 The structured Transaction is the official transaction record/receipt.
 

@@ -1,5 +1,9 @@
 # Migration 004 foundation — local validation, 2026-11-11
 
+The 14-test foundation suite was rerun on 2026-11-14. The separate full-lifecycle
+candidate conflicts with this applied foundation and remains unapplied outside
+the migrations directory. See [current review](VALIDATION_2026_11_14.md).
+
 Result: implemented and validated locally. No production connection/deployment.
 Only reserve/cancel is enabled; pickup, confirmation, disputes and timeouts remain
 future work. All earlier applied migration files remained unchanged.

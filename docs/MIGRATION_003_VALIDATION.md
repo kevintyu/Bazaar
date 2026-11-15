@@ -1,5 +1,9 @@
 # Migration 003 local validation — 2026-11-11
 
+Latest execution and anonymous Realtime correction: see
+[2026-11-14 validation](VALIDATION_2026_11_14.md). The historical results below
+are retained; the current run also tests isolated real browser sessions.
+
 Repository: `C:\Users\duyue\Documents\ChatGPT\Bazaar`.
 Result: **PASS for the executed backend/SDK validation suite**. Migration 004
 has begun as an implementation design only; no 004 SQL/runtime tests are claimed.

@@ -39,7 +39,7 @@ Integrate `supabase/migrations/20261110_003_conversations_messaging.sql` and run
 - A conversation can be independently archived/hidden by either participant.
 - Hiding chat is not permanent data destruction.
 - Existing histories stay accessible for receipts/disputes after a Listing sells or is removed.
-- No new chat writes after a Listing is SOLD or REMOVED.
+- No new messages after a Listing is SOLD or REMOVED; per-user archive/hide/read state remains editable.
 - Do not implement payments, attachments, reviews, blocking or moderation UI here.
 
 ## Known design checks

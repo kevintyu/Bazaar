@@ -129,7 +129,11 @@ await supabase.removeChannel(channel);
 
 ## Authorization design
 
-- All three messaging tables: RLS enabled; `anon` has no read privileges.
+- All three messaging tables: RLS enabled; `anon` has no table-wide read privileges or row access.
+- Correction 20261114000100 permits only SELECT(id) on messages/conversations
+  for Realtime's authorization probe, with restrictive anonymous RLS denial.
+  Anonymous users receive zero rows/events and cannot read message contents;
+  no table-wide SELECT or mutation privileges are granted.
 - `authenticated` can only `SELECT`; row access is restricted to the two conversation participants, or own inbox state.
 - `start_conversation` and `send_message` are the ONLY v1 client write paths to the message/conversation entities.
 - Caller identity comes from `auth.uid()` in guarded private implementation functions.
@@ -167,6 +171,7 @@ Account suspension rejects new messages, but retained private conversation histo
 | Recipient receives another message | Recipient state unhidden/unarchived |
 | Listing moves ACTIVE → REMOVED | All its Conversations concluded |
 | Message sent after conclusion | Denied |
+| Participant archives/hides/marks concluded history as read | Allowed; only caller's inbox state changes |
 | Realtime subscriber is a participant | Gets INSERT event |
 | Realtime subscriber is not a participant | Gets no private event |
 | Browser refresh/reconnect | Missing message history is recoverable from Postgres |
