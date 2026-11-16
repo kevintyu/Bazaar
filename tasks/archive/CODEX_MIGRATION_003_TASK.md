@@ -1,3 +1,8 @@
+> Historical record, organized 2026-11-15. See the [folder index](README.md). Original proposals, commands, results,
+> and paths below describe their original context, not current instructions.
+> For current policy see [Domain Model](../../docs/DOMAIN_MODEL.md) and [Domain Operations](../../docs/DOMAIN_OPERATIONS.md).
+> Seller-initiated pickup and timeout-completion proposals are superseded.
+
 # Codex Task — Integrate and Validate Marketplace Migration 003
 
 Read `AGENTS.md`, then the domain documentation under `docs/`. Inspect the real repo before modifying files.

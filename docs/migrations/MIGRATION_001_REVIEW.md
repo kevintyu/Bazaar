@@ -1,3 +1,8 @@
+> Historical record, organized 2026-11-15. Original proposals, commands, results,
+> and paths below describe their original context, not current instructions.
+> For current policy see [Domain Model](../DOMAIN_MODEL.md) and [Domain Operations](../DOMAIN_OPERATIONS.md).
+> Seller-initiated pickup and timeout-completion proposals are superseded.
+
 # Accounts, locations, and shops migration review
 
 Reviewed migration: `migrations/20261025_001_accounts_locations_shops.sql`.

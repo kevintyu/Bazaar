@@ -238,8 +238,8 @@ Conversation deletion should usually mean hiding it from that participant's inbo
 
 Owner-confirmed on 2026-11-11; this replaces the provisional RESERVED policy.
 Reconfirmed by the owner on 2026-11-14. The Conversation rules from
-DOMAIN_MODEL_AMENDMENT.md are incorporated here; they do not approve the
-candidate's provisional three-day pickup-confirmation window.
+[DOMAIN_MODEL_AMENDMENT.md](archive/DOMAIN_MODEL_AMENDMENT.md) are incorporated here; they do not approve the
+superseded candidate's three-day pickup-confirmation window; no completion timeout is approved.
 
 | Listing state | New Conversations | Existing Conversations |
 |---|---|---|
@@ -281,7 +281,7 @@ There is no separate Reservation entity.
 ### Transaction states
 
 - `RESERVED`
-- `AWAITING_BUYER_CONFIRMATION`
+- pending seller confirmation of a buyer pickup claim (exact state name TBD)
 - `COMPLETED`
 - `CANCELLED`
 - `DISPUTED`
@@ -316,37 +316,39 @@ Owner-confirmed 2026-11-11 for Migration 004:
 - This restriction decision concerns cancellation only; pickup, confirmation,
   dispute and blocking policies remain open where previously marked TBD.
 
-### Pickup confirmation
+### Pickup claims and seller confirmation (approved, not implemented)
 
-After handing over the item, seller selects "Mark as picked up."
+Approved documentation direction, 2026-11-15:
 
-Transaction moves:
+- The buyer initiates a claim that pickup occurred.
+- The claim alone does not complete the Transaction or mark the Listing SOLD.
+- The seller confirms the buyer's pickup claim. Successful confirmation must
+  atomically complete the Transaction, mark the Listing SOLD, and conclude its
+  Conversations while preserving participant-readable history.
+- No automatic completion timeout exists. Elapsed time or silence alone is not
+  authorization for completion, including a seller timeout-finalization action.
+- An unresolved or contested claim must not be treated as a completed sale.
 
-```text
-RESERVED → AWAITING_BUYER_CONFIRMATION
-```
+The exact pending-state name, RPC names, claim withdrawal/cancellation boundary,
+and restrictions during pickup/confirmation remain implementation decisions.
+The applied database still contains the legacy enum value
+`awaiting_buyer_confirmation`; it is not a description of the approved new flow.
+Only reservation/cancellation is implemented by the current transaction foundation.
 
-The buyer may:
+### Restricted administrator resolution (approved safeguards, not implemented)
 
-- confirm pickup;
-- dispute pickup.
+Resolution is an explicit, restricted operation, not unrestricted status editing.
+It requires an explicitly authorized administrator, reviewed supporting evidence,
+and a recorded justification. The operation must preserve the original claim,
+Conversation history, and previous audit records. Any approved state transition
+must be atomic with an immutable audit record of actor, time, prior/new state,
+justification, and evidence references.
 
-Buyer confirmation:
-
-```text
-Transaction → COMPLETED
-Listing → SOLD
-```
-
-Buyer dispute:
-
-```text
-Transaction → DISPUTED
-```
-
-If buyer does not respond, seller may eventually be allowed to finalize after a configurable timeout.
-
-Exact timeout is TBD.
+Administrator roles, permitted outcomes and transitions, evidence sufficiency,
+conflict-of-interest controls, any second-review requirement, and evidence access/
+retention rules remain explicitly unresolved. No generic service-role or admin
+bypass constitutes an approved resolution workflow. No admin resolution RPC is
+currently implemented.
 
 ## Review and reputation
 
@@ -491,9 +493,9 @@ Because meetup location exists only in chat in v1, meetup location is not used f
 
 ### Transactions
 
-- exact buyer-confirmation timeout;
-- exact seller-finalization behavior after timeout;
-- dispute-resolution workflow;
+- exact pickup-claim state/API names and claim withdrawal/cancellation boundary;
+- reminder/escalation behavior, without time-based completion;
+- restricted administrator resolution roles, outcomes and evidence requirements;
 - cancellation reason taxonomy;
 - whether cancellation behavior affects visible or internal reputation.
 

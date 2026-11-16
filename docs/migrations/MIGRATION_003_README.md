@@ -4,8 +4,8 @@
 
 - `supabase/migrations/20261110_003_conversations_messaging.sql`
 - `supabase/tests/003_structural_checks.sql`
-- `docs/MIGRATION_003_README.md`
-- `docs/CODEX_MIGRATION_003_TASK.md`
+- `docs/migrations/MIGRATION_003_README.md`
+- `tasks/archive/CODEX_MIGRATION_003_TASK.md`
 
 ## Requirements
 
@@ -17,7 +17,7 @@ Apply **after** the actual Migration 001 and Migration 002 used by the repositor
 - the `private` schema is **not** exposed as a PostgREST API schema;
 - Supabase Auth is configured with `auth.uid()` available in authenticated RPC calls.
 
-Local applied history and runtime validation are recorded in `MIGRATION_003_VALIDATION.md`. No production deployment is authorized by this task. The separate compatibility migration supplies the missing eligibility helper without changing Migration 002.
+Local applied history and runtime validation are recorded in [MIGRATION_003_VALIDATION.md](../validation/MIGRATION_003_VALIDATION.md). No production deployment is authorized by this task. The separate compatibility migration supplies the missing eligibility helper without changing Migration 002.
 
 ## Added entities
 
@@ -191,4 +191,10 @@ Also test two overlapping sends (same client ID) and a concurrent remove/send; o
 
 ## Validation status
 
-Applied local history verified 2026-11-11: 001, 002, compatibility, 003. See `MIGRATION_003_VALIDATION.md` for current executed checks and blockers. Applied SQL files remain unchanged; historical provisional comments are superseded by `MESSAGING_POLICY_DECISION.md`.
+See the [migration index](README.md) for the seven versions verified locally on
+2026-11-15, including the anonymous Realtime correction. Executed messaging and
+browser results are in [2026-11-14 validation](../validation/VALIDATION_2026_11_14.md).
+Applied SQL remains unchanged. Current policy is authoritative in
+[Domain Model](../DOMAIN_MODEL.md) and [Domain Operations](../DOMAIN_OPERATIONS.md);
+the [original messaging decision](../archive/MESSAGING_POLICY_DECISION.md) is retained
+only for provenance.

@@ -1,3 +1,8 @@
+> Historical record, organized 2026-11-15. See the [folder index](README.md). Original proposals, commands, results,
+> and paths below describe their original context, not current instructions.
+> For current policy see [Domain Model](../../docs/DOMAIN_MODEL.md) and [Domain Operations](../../docs/DOMAIN_OPERATIONS.md).
+> Seller-initiated pickup and timeout-completion proposals are superseded.
+
 # Codex task: reconcile and validate Migration 003 review fixes
 
 Read `AGENTS.md`, `docs/DOMAIN_MODEL.md`, `docs/ER_MODEL.md`, `docs/DATABASE_SCHEMA.md`, and `docs/DOMAIN_OPERATIONS.md` first.

@@ -1,6 +1,14 @@
-# Migration 003 — Remaining validation before Migration 004 approval
+# Migration 003 — Reusable validation checklist
 
-The prior Work report in this conversation stated Migration 003 structural checks and 20 database regression tests passed locally. That report is not equivalent to a fresh independent test execution here, and it explicitly left Realtime validation and provisional messaging rules outstanding.
+Status, 2026-11-15: the backend and browser checks were executed on 2026-11-14;
+see [results](../validation/VALIDATION_2026_11_14.md). This checklist is a rerun
+reference, not a statement that validation remains outstanding. The reserve/
+cancel foundation already exists; the separate full-lifecycle candidate is
+archived and must not be applied.
+
+This checklist originated before full Realtime validation. Those historical gaps
+were subsequently tested; consult the linked dated report for outcomes and limits.
+A future rerun must report its own actual results rather than reuse old pass claims.
 
 **Confirmed owner rule:** NEW Conversations on RESERVED Listings are BLOCKED. EXISTING Conversations continue; SOLD/REMOVED conversations are read-only. This is the authoritative expected behavior going forward.
 
@@ -42,6 +50,6 @@ The prior Work report in this conversation stated Migration 003 structural check
 
 https://supabase.com/docs/guides/realtime/postgres-changes
 
-## Blocking decision
+## Historical integration gate
 
-Migration 004 is a candidate until the above tests pass and actual migration history is reconciled. Do not deploy Migration 004 to production as a way of avoiding the Messaging tests.
+The original bundle treated Migration 004 as a candidate. That statement is historical; the applied reserve/cancel foundation is documented separately. Do not deploy Migration 004 to production as a way of avoiding the Messaging tests.

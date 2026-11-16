@@ -1,11 +1,15 @@
 # Migration 002 — Listings and Inventory
 
+Scope: this guide describes what Migration 002 adds, not the entire current
+application. Messaging and reserve/cancel were added later; see the
+[migration index](README.md). Applied SQL is unchanged.
+
 ## Files
 
 - `supabase/migrations/20261105_002_listings_inventory.sql`
 - `supabase/tests/002_structural_checks.sql`
-- `docs/MIGRATION_002_README.md`
-- `docs/CODEX_MIGRATION_002_TASK.md`
+- `docs/migrations/MIGRATION_002_README.md`
+- `tasks/archive/CODEX_MIGRATION_002_TASK.md`
 
 ## Prerequisite
 
@@ -69,7 +73,7 @@ The reviewed migration has now been applied and reset successfully in the local
 `bazaar-migration-test` Supabase project. All 20 standard-library Python integration
 tests pass, including the supplied structural SQL checks, real Auth/REST/Storage
 requests and concurrent mutations. Application-schema lint is clean; full-schema
-lint reports bundled PostGIS diagnostics. See `MIGRATION_002_VALIDATION.md` for
+lint reports bundled PostGIS diagnostics. See [MIGRATION_002_VALIDATION.md](../validation/MIGRATION_002_VALIDATION.md) for
 the exact corrections, commands, environment, and outstanding launch work.
 
 Reproduce locally (Docker must be running):

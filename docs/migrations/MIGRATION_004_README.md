@@ -98,18 +98,19 @@ RESERVED Listings without Transactions were preserved. Trusted database fixture
 SQL can still construct such rows; ordinary API clients cannot mutate statuses.
 No user history was inferred, deleted or rewritten to populate Transactions.
 
-## Deliberately deferred
+## Approved future work, not implemented
 
-No mark_picked_up, confirm_pickup, dispute_pickup or timeout/finalization RPC.
-The enum includes future names but a foundation CHECK and transition guard
-reject unsupported states. Pickup/deadline/completion/dispute metadata will be
-added with the approved lifecycle implementation in a future migration.
+Buyer-initiated pickup claims, seller confirmation and restricted administrator
+resolution are not enabled by this foundation. The applied enum includes legacy
+names, but the foundation CHECK and transition guard reject unsupported states.
+No automatic completion timeout or time-only seller finalization is approved.
 
-Still undecided: confirmation duration, deadline precedence, seller finalization,
-dispute-resolution roles/outcomes, restrictions during pickup/confirmation/dispute,
-blocking during active Transactions, and negotiated price/receipt snapshots.
-Cancellation's restriction rule does not silently decide those other actions.
-No UI, payments, reviews, transaction Realtime feed or production deployment.
+Exact claim-state/RPC names, administrator roles/outcomes/evidence rules, and
+restrictions during pickup/confirmation/resolution remain unresolved. Existing
+cancellation restrictions do not silently decide those other actions. Follow
+[Domain Model](../DOMAIN_MODEL.md) and [Domain Operations](../DOMAIN_OPERATIONS.md).
+No UI, payments, reviews, transaction Realtime feed or production deployment is
+implied by this migration guide.
 
 ## Validation
 
@@ -125,5 +126,5 @@ These tests target the fixed local stack only and retain UUID-tagged fixtures.
 The 004 suite uses real authenticated JWTs, competing independent requests,
 controlled lock holders, and transaction-scoped failure injection. No service
 key substitutes for participant authorization checks. Read
-`MIGRATION_004_VALIDATION.md` for exact commands actually run, initial failure,
+[MIGRATION_004_VALIDATION.md](../validation/MIGRATION_004_VALIDATION.md) for exact commands actually run, initial failure,
 correction, results and limits; the list above is also the rerun recipe.

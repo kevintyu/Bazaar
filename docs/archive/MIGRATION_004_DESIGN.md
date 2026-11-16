@@ -1,3 +1,8 @@
+> Historical record, organized 2026-11-15. See the [folder index](README.md). Original proposals, commands, results,
+> and paths below describe their original context, not current instructions.
+> For current policy see [Domain Model](../DOMAIN_MODEL.md) and [Domain Operations](../DOMAIN_OPERATIONS.md).
+> Seller-initiated pickup and timeout-completion proposals are superseded.
+
 # Migration 004 — Transactions and Reservations: implementation design
 
 Status updated 2026-11-11: the reserve/cancel foundation is implemented and

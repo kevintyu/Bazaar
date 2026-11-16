@@ -1,11 +1,19 @@
-# Marketplace — Seller UI vertical slice
+# Marketplace (Bazaar repository)
+
+See the [documentation index](docs/README.md), [Domain Model](docs/DOMAIN_MODEL.md),
+[Domain Operations](docs/DOMAIN_OPERATIONS.md), and [Roadmap](docs/ROADMAP.md).
+The backend also includes messaging and reserve/cancel operations; this README
+describes the narrower implemented seller UI. Pickup claims, seller confirmation
+and administrator resolution are future work, not available features.
+
+## Seller UI vertical slice
 
 This Next.js/TypeScript seller workflow is integrated with Domain Model v1 and
 Supabase Migrations 001 and 002. The supplied App Router routes and browser-session
 authentication have been preserved. Public pages use Migration 002's sanitized
 RPCs, while seller content reads and edits remain protected by RLS.
 
-See [the integration report](docs/SELLER_UI_INTEGRATION.md) for changes, validation,
+See [the integration report](docs/validation/SELLER_UI_INTEGRATION.md) for changes, validation,
 and remaining limitations.
 
 ## Included routes
@@ -96,7 +104,8 @@ The `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SECRET_KEY` is used only inside `sr
 
 ## What Codex should test
 
-See `docs/CODEX_SELLER_UI_TASK.md` and `docs/QA_CHECKLIST.md`.
+Use the [seller UI QA checklist](docs/testing/QA_CHECKLIST.md). The
+[original integration task](tasks/archive/CODEX_SELLER_UI_TASK.md) is historical.
 
 ## Product correctness caveat
 

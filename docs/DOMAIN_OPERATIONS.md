@@ -60,17 +60,21 @@ publishListing()
 removeListing()
 ```
 
-Future:
+Implemented backend commands (see contracts below):
 
 ```text
 startConversation()
 sendMessage()
 reserveListing()
 cancelTransaction()
-markPickedUp()
-confirmPickup()
-disputePickup()
-finalizeTimedOutTransaction()
+```
+
+Future actions (not implemented):
+
+```text
+claimPickup() [conceptual name]
+confirmPickupClaim() [conceptual name]
+resolvePickup() [restricted administrator; conceptual name]
 submitReview()
 blockUser()
 reportListing()
@@ -317,7 +321,7 @@ Draft may be permanently discarded because it has never been public.
 
 ### RESERVED Listing
 
-Future rule:
+Current rule:
 
 - cannot directly remove;
 - must cancel Transaction first;
@@ -422,38 +426,13 @@ If Transaction completion fails:
 Listing must remain RESERVED
 ```
 
-## Current implementation milestone
+## Current implementation status
 
-Implement first:
-
-```text
-profiles
-locations
-shops
-```
-
-with:
-
-```text
-activate_selling()
-```
-
-Then:
-
-```text
-listings
-listing_images
-```
-
-with:
-
-```text
-create_listing()
-publish_listing()
-remove_listing()
-```
-
-Do not introduce messaging/Transaction/Review complexity until this vertical slice works end-to-end.
+Accounts, seller activation, Shops, Listings, messaging backend and the
+reservation/cancellation foundation are implemented locally. Seller UI coverage
+is separate from backend support. Pickup claims, seller confirmation and restricted
+administrator resolution are approved future work, not implemented operations.
+See [Roadmap](ROADMAP.md) and [migration guides](migrations/README.md).
 
 ## Messaging operations (Migration 003)
 
@@ -528,28 +507,36 @@ The append-only audit event and Listing change share the RPC database transactio
 
 ### Explicitly not enabled by the foundation
 
-No pickup, buyer-confirmation, dispute, timeout or seller-finalization RPC exists.
+No pickup-claim, seller-confirmation or administrator-resolution RPC exists.
+No automatic completion or time-only finalization is permitted.
 Although the status enum reserves those names, a CHECK constraint and transition
 guard allow only RESERVED/CANCELLED in this phase. A future migration must add
-approved policies, metadata and transitions. No default timeout was selected.
+approved policies, metadata and transitions. The legacy enum names do not define the approved future pickup flow.
 
-### Reviewed future contract (not enabled)
+### Buyer pickup claim and seller confirmation (approved, not implemented)
 
-The DOMAIN_OPERATIONS_AMENDMENT.md proposal is reconciled as follows; existing
-reserve/cancel signatures, request UUID retries, 1,000-character cancellation
-reasons and restriction checks above remain authoritative.
+Conceptual actions below are product contracts, not existing RPC signatures.
 
-| Proposed command | Actor | Preconditions | Atomic result |
-|---|---|---|---|
-| mark_picked_up(transaction_id) | Seller | RESERVED Transaction and Listing | AWAITING_BUYER_CONFIRMATION with stored deadline and audit event |
-| confirm_pickup(transaction_id) | Buyer | AWAITING_BUYER_CONFIRMATION | COMPLETED, Listing SOLD, Conversations concluded, audit event |
-| dispute_pickup(transaction_id, reason) | Buyer | AWAITING_BUYER_CONFIRMATION | DISPUTED, Listing remains RESERVED, audit event |
-| finalize_unconfirmed_pickup(transaction_id) | Seller | AWAITING_BUYER_CONFIRMATION, stored deadline reached, no dispute | COMPLETED, Listing SOLD, Conversations concluded, audit event |
+| Action | Actor | Required behavior |
+|---|---|---|
+| Claim pickup | Buyer participant | Record the buyer's claim and audit event; do not complete the Transaction or sell the Listing |
+| Confirm pickup claim | Seller participant | Validate a pending buyer claim; atomically complete Transaction, mark Listing SOLD, conclude Conversations and record audit evidence |
+| Resolve contested/unresolved pickup | Explicitly authorized administrator | Review evidence and record justification; use only a separately approved transition and preserve immutable history |
 
-Ordinary cancellation stops after pickup is marked. Disputes block seller
-finalization and require a future admin resolution operation. Deadlines, once
-set, must not change when operator configuration changes. A three-day default
-and manual seller finalization are candidate proposals, not enabled policy.
-Restriction rules for these future operations, admin dispute resolution and
-blocking behavior remain open. The amendment's unrestricted cancellation
-proposal conflicts with the existing owner-confirmed rule and is not adopted.
+No automatic completion timeout or time-only seller finalization is allowed.
+Silence does not confirm receipt. Notifications or escalation deadlines, if later
+introduced, must not themselves complete a Transaction.
+
+All future operations must derive the actor from authenticated identity, enforce
+participant/admin authorization, validate state, prevent duplicate transitions,
+and commit lifecycle changes and immutable audit events atomically. Exact retries
+must not manufacture a second claim or completion. Administrator resolution must
+record actor, server time, prior/new state, justification and evidence references;
+it must preserve original claims, messages and earlier events.
+
+Still unresolved: exact state/RPC names, evidence requirements and access/retention,
+allowed admin outcomes, administrator role assignment, second-review requirements,
+claim withdrawal and cancellation boundaries, and account/shop/moderation rules
+for these new actions. Do not invent those details or enable a general status-
+update escape hatch. Existing reservation request UUIDs, 1,000-character cancellation
+reasons and approved cancellation restrictions remain authoritative.

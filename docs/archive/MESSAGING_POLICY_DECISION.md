@@ -1,8 +1,13 @@
+> Historical record, organized 2026-11-15. See the [folder index](README.md). Original proposals, commands, results,
+> and paths below describe their original context, not current instructions.
+> For current policy see [Domain Model](../DOMAIN_MODEL.md) and [Domain Operations](../DOMAIN_OPERATIONS.md).
+> Seller-initiated pickup and timeout-completion proposals are superseded.
+
 # Messaging policy decision record
 
 Status: OWNER-CONFIRMED, 2026-11-11.
 
-Confirmed in "Branch · App Stack Challenges" and the current repository task:
+Confirmed in "Branch Â· App Stack Challenges" and the current repository task:
 new Conversations are blocked while a Listing is RESERVED; all existing
 Conversations may continue, including those with buyers not selected for reservation.
 

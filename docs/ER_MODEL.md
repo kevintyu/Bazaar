@@ -17,6 +17,15 @@
 - `blocks`
 - `reports`
 
+## Implementation boundary
+
+Profiles, Locations, Shops, Listings/images, Conversations/messages/inbox state,
+and the reservation/cancellation Transaction/audit foundation are implemented
+locally. Reviews, Favorites, Blocks and Reports in this conceptual diagram are
+future entities. The diagram does not imply implemented pickup or administrator
+resolution operations. Lifecycle authority remains [Domain Model](DOMAIN_MODEL.md)
+and [Domain Operations](DOMAIN_OPERATIONS.md).
+
 ## Entity relationship diagram
 
 ```mermaid

@@ -211,53 +211,27 @@ text
 system
 ```
 
-### transactions
+### transactions (applied reserve/cancel foundation)
 
-```text
-id
-listing_id
-shop_id
-conversation_id
-buyer_user_id
-seller_user_id
-status
-reserved_at
-seller_marked_picked_up_at
-buyer_confirmation_deadline
-buyer_confirmed_at
-seller_finalized_at
-cancelled_at
-cancelled_by_user_id
-cancellation_reason
-disputed_at
-completed_at
-created_at
-updated_at
-```
+Current columns: `id`, `listing_id`, `shop_id`, `conversation_id`, `buyer_user_id`,
+`seller_user_id`, `request_id`, `status`, `reserved_at`, `cancelled_at`,
+`cancelled_by_user_id`, `cancellation_reason`, `created_at`, `updated_at`.
 
-Transaction states:
+The applied enum contains `reserved`, `awaiting_buyer_confirmation`, `completed`,
+`cancelled`, and `disputed`. The foundation CHECK and history trigger enable only
+RESERVED/CANCELLED transitions. The other names are legacy schema facts, not an
+implemented pickup workflow or authority for future product rules.
 
-```text
-reserved
-awaiting_buyer_confirmation
-completed
-cancelled
-disputed
-```
+The applied single-active-transaction index includes `reserved`,
+`awaiting_buyer_confirmation`, and `disputed`. Its SQL is preserved unchanged.
+Composite foreign keys enforce the Listing/Shop/seller and Conversation/buyer/
+seller identities. Seller/request UUID uniqueness supports durable retries.
 
-Only one active Transaction may exist per Listing.
-
-Recommended partial unique index:
-
-```sql
-create unique index one_active_transaction_per_listing
-on public.transactions (listing_id)
-where status in (
-  'reserved',
-  'awaiting_buyer_confirmation',
-  'disputed'
-);
-```
+Approved future behavior is buyer pickup claim followed by seller confirmation,
+with no automatic completion timeout and restricted, evidence-backed admin
+resolution. Exact future column, state and RPC names are TBD; no schema change
+is made by this documentation. See [Domain Model](DOMAIN_MODEL.md) and
+[Domain Operations](DOMAIN_OPERATIONS.md).
 
 ### reviews
 
@@ -379,7 +353,7 @@ Backend/domain operations should enforce:
 - Listing is in a valid state for each transition;
 - reservation creates Transaction + updates Listing atomically;
 - cancellation updates Transaction + Listing atomically;
-- pickup confirmation updates Transaction + Listing atomically;
+- future seller confirmation of a buyer pickup claim updates Transaction + Listing atomically;
 - Reviews only after completed Transactions;
 - reviewer/reviewed users are Transaction participants;
 - jurisdiction policy checks before publication.
@@ -475,15 +449,15 @@ reports
 
 ## Migration 004 implementation status (2026-11-11)
 
-The `transactions` section above describes the eventual lifecycle. The currently
+The `transactions` section above describes the applied foundation. The currently
 applied local foundation includes identity FKs, seller/request UUID uniqueness,
 RESERVED/CANCELLED status, reservation/cancellation timestamps, actor, optional
-free-text reason, and created/updated timestamps. Pickup, deadline, dispute and
-completion fields are deferred alongside their RPCs. The full enum exists, but
+free-text reason, and created/updated timestamps. Pickup-claim, seller-confirmation and administrator-resolution metadata and
+RPCs are not implemented. No completion timeout is approved. The full enum exists, but
 `transactions_foundation_states` and the history guard reject other transitions.
 
 `transaction_events` stores append-only participant-readable reservation and
 cancellation events with actor, previous/new state, timestamp and cancellation
 reason. Trigger-generated events commit atomically with the operation. Direct
 client writes to both tables are revoked. Composite FKs bind Listing/Shop/seller
-and Conversation/Listing/buyer/seller identities. See MIGRATION_004_README.md.
+and Conversation/Listing/buyer/seller identities. See [MIGRATION_004_README.md](migrations/MIGRATION_004_README.md).

@@ -89,7 +89,7 @@ Important rules:
 Core Transaction states:
 
 - `RESERVED`
-- `AWAITING_BUYER_CONFIRMATION`
+- pending seller confirmation of a buyer pickup claim (exact state name TBD)
 - `COMPLETED`
 - `CANCELLED`
 - `DISPUTED`
@@ -98,12 +98,14 @@ Important rules:
 
 - Seller creates the Transaction by reserving a Listing for a specific buyer.
 - Buyer or seller may cancel before pickup.
-- Seller marks the item as picked up.
-- This starts the buyer-confirmation window.
-- Buyer may confirm pickup or dispute.
-- Buyer confirmation completes the Transaction and marks the Listing sold.
-- After a configurable timeout, the seller may eventually be allowed to finalize if the buyer does not respond.
-- Exact timeout duration is intentionally TBD.
+- Buyer initiates a pickup claim; the claim alone does not complete the sale.
+- Seller confirms the buyer claim; completion and Listing SOLD must be atomic.
+- No automatic completion timeout or time-only seller finalization is allowed.
+- Administrator resolution requires explicit authorization, reviewed evidence,
+  justification and immutable actor/time/state-transition audit records.
+- Exact resolution outcomes and evidence rules remain unresolved.
+- Pickup/confirmation/admin resolution are not yet implemented; the applied
+  database legacy enum must not be silently renamed.
 
 ## Conversations
 
@@ -226,48 +228,20 @@ Especially protect against partial state updates.
 
 ## Current implementation phase
 
-Implement the first vertical slice:
+Implemented locally: seller/listing vertical slice, messaging backend, and the
+reservation/cancellation foundation. The product UI does not expose every backend
+capability. Pickup claims, seller confirmation and restricted administrator
+resolution remain approved but unimplemented work.
 
-User
-→ activate selling
-→ create first Shop
-→ create Listing draft
-→ edit Listing
-→ publish Listing
-→ view Listing publicly
-→ browse public Shop/Listings
+The Domain Model and Domain Operations are authoritative product sources.
+Use [docs/README.md](docs/README.md) for documentation navigation and
+[docs/ROADMAP.md](docs/ROADMAP.md) for current scope and open decisions.
+Migration guides describe applied behavior; archived proposals and historical
+validation reports do not authorize new work or override current policy.
 
-Do not implement yet:
-
-- messaging;
-- reservations;
-- transactions;
-- reviews;
-- payments;
-- shipping;
-- auctions;
-- subscriptions;
-- promoted listings.
-
-## Current backend milestone
-
-The next backend work should start from:
-
-- `profiles`
-- `locations`
-- `shops`
-
-Then add:
-
-- `listings`
-- `listing_images`
-
-Initial seller/listing domain operations:
-
-- `activate_selling()`
-- `create_listing()`
-- `publish_listing()`
-- `remove_listing()`
+Preserve RESERVED chat behavior: block new Conversations, allow existing ones.
+Do not implement unrelated reviews, payments, shipping, auctions, subscriptions
+or promoted listings without a separate task. Never rewrite applied migrations.
 
 ## Working style for Codex
 
