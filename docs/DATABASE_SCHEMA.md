@@ -211,27 +211,30 @@ text
 system
 ```
 
-### transactions (applied reserve/cancel foundation)
+### transactions (foundation plus lifecycle extension)
 
-Current columns: `id`, `listing_id`, `shop_id`, `conversation_id`, `buyer_user_id`,
-`seller_user_id`, `request_id`, `status`, `reserved_at`, `cancelled_at`,
-`cancelled_by_user_id`, `cancellation_reason`, `created_at`, `updated_at`.
+Original identity, reservation request UUID and cancellation columns are preserved.
+Migration 005 adds pickup_claimed_at, seller_confirmed_at, completed_at,
+completed_by_user_id and administrator_resolution_id. There is no deadline column.
+The unchanged enum value awaiting_buyer_confirmation is explicitly mapped to a
+buyer claim awaiting SELLER confirmation. The existing single-active index covers
+that value, RESERVED and DISPUTED; it is unchanged.
 
-The applied enum contains `reserved`, `awaiting_buyer_confirmation`, `completed`,
-`cancelled`, and `disputed`. The foundation CHECK and history trigger enable only
-RESERVED/CANCELLED transitions. The other names are legacy schema facts, not an
-implemented pickup workflow or authority for future product rules.
+The foundation-only CHECK is replaced by lifecycle metadata constraints. Updated
+history/event triggers preserve identity and existing audit rows while allowing
+buyer claim, seller confirmation and authorized administrator resolution. Public
+direct writes remain denied and participant RLS remains unchanged.
 
-The applied single-active-transaction index includes `reserved`,
-`awaiting_buyer_confirmation`, and `disputed`. Its SQL is preserved unchanged.
-Composite foreign keys enforce the Listing/Shop/seller and Conversation/buyer/
-seller identities. Seller/request UUID uniqueness supports durable retries.
+transaction_events gains only an opaque administrator_resolution_id FK. Reasons,
+evidence references and review findings for administrator decisions remain in
+private.transaction_resolutions. Private transaction_administrators is the trusted
+operator allowlist. Private transaction_notification_policy and
+transaction_notification_outbox support disabled-by-default reminder/escalation
+configuration and durable notification intents. API roles cannot read/write these
+tables. No external delivery worker or scheduled job is installed.
 
-Approved future behavior is buyer pickup claim followed by seller confirmation,
-with no automatic completion timeout and restricted, evidence-backed admin
-resolution. Exact future column, state and RPC names are TBD; no schema change
-is made by this documentation. See [Domain Model](DOMAIN_MODEL.md) and
-[Domain Operations](DOMAIN_OPERATIONS.md).
+See [Migration 005](migrations/MIGRATION_005_README.md) for precise object and RPC
+contracts, and [Domain Operations](DOMAIN_OPERATIONS.md) for authorization rules.
 
 ### reviews
 
@@ -447,17 +450,10 @@ blocks
 reports
 ```
 
-## Migration 004 implementation status (2026-11-11)
+## Applied extension status (2026-11-24)
 
-The `transactions` section above describes the applied foundation. The currently
-applied local foundation includes identity FKs, seller/request UUID uniqueness,
-RESERVED/CANCELLED status, reservation/cancellation timestamps, actor, optional
-free-text reason, and created/updated timestamps. Pickup-claim, seller-confirmation and administrator-resolution metadata and
-RPCs are not implemented. No completion timeout is approved. The full enum exists, but
-`transactions_foundation_states` and the history guard reject other transitions.
-
-`transaction_events` stores append-only participant-readable reservation and
-cancellation events with actor, previous/new state, timestamp and cancellation
-reason. Trigger-generated events commit atomically with the operation. Direct
-client writes to both tables are revoked. Composite FKs bind Listing/Shop/seller
-and Conversation/Listing/buyer/seller identities. See [MIGRATION_004_README.md](migrations/MIGRATION_004_README.md).
+Migration 004 supplied the reservation/cancellation foundation; Migration 005
+extends it without rewriting any applied files, reservation retry keys, identity
+FKs or historical audit records. Pending can persist indefinitely. The legacy
+pending enum is documented rather than renamed. No review eligibility rules,
+payments or frontend were added. See [migration guides](migrations/README.md).

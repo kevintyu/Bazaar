@@ -2,9 +2,10 @@
 
 See the [documentation index](docs/README.md), [Domain Model](docs/DOMAIN_MODEL.md),
 [Domain Operations](docs/DOMAIN_OPERATIONS.md), and [Roadmap](docs/ROADMAP.md).
-The backend also includes messaging and reserve/cancel operations; this README
-describes the narrower implemented seller UI. Pickup claims, seller confirmation
-and administrator resolution are future work, not available features.
+Buyer and seller transaction pages now use the existing reserve/cancel and
+[Migration 005](docs/migrations/MIGRATION_005_README.md) pickup lifecycle RPCs.
+Minimal listing chat includes seller reservation. Administrator resolution remains
+backend-only. See [transaction UI validation](docs/validation/TRANSACTION_UI_VALIDATION.md).
 
 ## Seller UI vertical slice
 
@@ -20,6 +21,11 @@ and remaining limitations.
 
 | Route | Purpose |
 |---|---|
+| `/purchases` | Buyer reservations and retained history |
+| `/sales` | Seller transactions and confirmation requirements |
+| `/transactions/[transactionId]` | Participant-only details, pickup claim, confirmation and cancellation |
+| `/messages` | Participant inbox and optional hidden/archived history |
+| `/messages/[conversationId]` | Listing conversation, messages and seller reservation |
 | `/auth` | Minimal email/password sign in / registration |
 | `/sell` | Seller home and shop selection |
 | `/sell/start` | Seller activation and first shop creation |
@@ -38,7 +44,8 @@ and remaining limitations.
 3. Supabase Auth is configured; email confirmation behavior and allowed redirect URLs checked.
 4. A private `listing-images` Storage bucket from Migration 002.
 5. Server-only Supabase secret/service key for the public image redirect route. **Never expose it to the browser.**
-6. Seller has a Shop created through `activate_selling()`, or uses `/sell/start` to create one.
+6. Transaction/chat pages require applied local Migrations 003, 004, 005 and their existing compatibility/correction migrations. Do not apply archived candidates.
+7. Seller has a Shop created through `activate_selling()`, or uses `/sell/start` to create one.
 
 ## Running as a standalone Next project
 

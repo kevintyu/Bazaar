@@ -9,7 +9,8 @@
 4. [Roadmap](ROADMAP.md) separates implemented work, future work and open decisions.
 
 Buyer pickup claims, seller confirmation and restricted administrator resolution
-are approved direction, not implemented features. There is no automatic completion
+are implemented locally by [Migration 005](migrations/MIGRATION_005_README.md).
+Notification intents are queued; external delivery and public dispute entry are not implemented. There is no automatic completion
 timeout. RESERVED Listings block new Conversations but allow existing ones.
 
 ## Guides and evidence

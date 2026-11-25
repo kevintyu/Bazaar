@@ -281,7 +281,7 @@ There is no separate Reservation entity.
 ### Transaction states
 
 - `RESERVED`
-- pending seller confirmation of a buyer pickup claim (exact state name TBD)
+- pending seller confirmation of a buyer pickup claim (compatibility SQL value: `awaiting_buyer_confirmation`)
 - `COMPLETED`
 - `CANCELLED`
 - `DISPUTED`
@@ -313,42 +313,65 @@ Owner-confirmed 2026-11-11 for Migration 004:
   clear; restrictions do not destroy the Transaction or its readable history.
 - Cancellation currently accepts optional free text. Preselected reason options
   will be defined later, alongside a free-text reason; no taxonomy is chosen yet.
-- This restriction decision concerns cancellation only; pickup, confirmation,
-  dispute and blocking policies remain open where previously marked TBD.
+- That decision concerned cancellation only; the 2026-11-24 decision below
+  extends eligibility checks to pickup, confirmation and administrator resolution.
 
-### Pickup claims and seller confirmation (approved, not implemented)
+### Pickup claims and seller confirmation (implemented locally)
 
-Approved documentation direction, 2026-11-15:
+Migration 005, 2026-11-24, implements the approved buyer-initiated workflow:
 
-- The buyer initiates a claim that pickup occurred.
-- The claim alone does not complete the Transaction or mark the Listing SOLD.
-- The seller confirms the buyer's pickup claim. Successful confirmation must
-  atomically complete the Transaction, mark the Listing SOLD, and conclude its
-  Conversations while preserving participant-readable history.
-- No automatic completion timeout exists. Elapsed time or silence alone is not
-  authorization for completion, including a seller timeout-finalization action.
-- An unresolved or contested claim must not be treated as a completed sale.
+- Only the transaction's buyer may claim pickup from RESERVED. The Listing stays
+  RESERVED, and an immutable claim event plus seller notification intent are recorded.
+- Only its seller may confirm an existing pending claim. Completion, Listing SOLD,
+  audit event and conclusion of Listing Conversations commit atomically.
+- No confirmation deadline, automatic completion or time-only seller finalization exists.
+- Exact retries return the original receipt, including a recorded claim after a
+  later resolution; they cannot repeat the transition or notification intent.
+- Ordinary participant cancellation remains RESERVED-only. After a claim, only
+  the restricted administrator resolution path may cancel. Claim withdrawal is not exposed.
 
-The exact pending-state name, RPC names, claim withdrawal/cancellation boundary,
-and restrictions during pickup/confirmation remain implementation decisions.
-The applied database still contains the legacy enum value
-`awaiting_buyer_confirmation`; it is not a description of the approved new flow.
-Only reservation/cancellation is implemented by the current transaction foundation.
+Compatibility mapping: existing SQL enum `awaiting_buyer_confirmation` represents
+**a buyer claim awaiting seller confirmation**. No enum is renamed or recreated.
+DISPUTED records with a buyer claim may be resolved by an administrator; a public
+operation to initiate a dispute is not introduced by this extension.
 
-### Restricted administrator resolution (approved safeguards, not implemented)
+Owner-confirmed 2026-11-24: new claims, seller confirmations, administrator
+completions and administrator cancellations are blocked while either participant
+account, Shop/seller eligibility or Listing moderation is restricted. Existing
+receipt-only retries preserve their original result. Administrator cancellation
+returns the Listing to ACTIVE only after these restrictions clear.
 
-Resolution is an explicit, restricted operation, not unrestricted status editing.
-It requires an explicitly authorized administrator, reviewed supporting evidence,
-and a recorded justification. The operation must preserve the original claim,
-Conversation history, and previous audit records. Any approved state transition
-must be atomic with an immutable audit record of actor, time, prior/new state,
-justification, and evidence references.
+### Restricted administrator resolution (implemented safeguards)
 
-Administrator roles, permitted outcomes and transitions, evidence sufficiency,
-conflict-of-interest controls, any second-review requirement, and evidence access/
-retention rules remain explicitly unresolved. No generic service-role or admin
-bypass constitutes an approved resolution workflow. No admin resolution RPC is
-currently implemented.
+An active account on an operator-managed private database allowlist may resolve
+a Transaction to COMPLETED or CANCELLED. Client-supplied role metadata is never
+administrator authorization. A participating buyer/seller cannot resolve their
+own Transaction as an administrator. Completion always requires a recorded buyer
+claim; a RESERVED Transaction without a claim can only be cancelled.
+
+A meaningful justification, nonempty evidence references and substantive review
+findings are mandatory. They are stored in an immutable private resolution record
+with administrator identity, request UUID, decision and server timestamp. Public
+participant audit records retain actor, from/to status, timestamp and an opaque
+resolution ID, but never confidential evidence or review findings. Original
+claims, reservation records, messages and earlier events are retained. Resolution
+and Transaction/Listing/audit changes commit atomically, with exact-request retries.
+
+The database validates required review records; it cannot verify that a human
+actually inspected an external artifact or that the evidence is truthful. Evidence
+sufficiency standards, review tooling, evidence access/retention and any second-review
+requirement remain operational decisions before deployment. No general status-editing
+or client-configurable administrator bypass exists.
+
+### Notifications, reminders and escalation
+
+A claim queues a durable private notification intent addressed to its seller.
+Reminder and administrator-escalation intervals are operator-configurable and NULL
+(disabled) by default. A trusted explicit enqueue operation may append due intents;
+it never completes, cancels or changes a Transaction. Pending may persist indefinitely.
+No scheduler, external delivery adapter, or fixed reminder frequency is installed.
+Delivery integrations must recheck current pending state and deduplicate by outbox
+ID; queued intents are not evidence of delivered notifications.
 
 ## Review and reputation
 
@@ -493,9 +516,9 @@ Because meetup location exists only in chat in v1, meetup location is not used f
 
 ### Transactions
 
-- exact pickup-claim state/API names and claim withdrawal/cancellation boundary;
+- any future claim withdrawal or public dispute-entry workflow;
 - reminder/escalation behavior, without time-based completion;
-- restricted administrator resolution roles, outcomes and evidence requirements;
+- evidence sufficiency, review tooling, retention and second-review requirements;
 - cancellation reason taxonomy;
 - whether cancellation behavior affects visible or internal reputation.
 

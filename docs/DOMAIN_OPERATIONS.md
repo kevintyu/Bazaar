@@ -67,14 +67,14 @@ startConversation()
 sendMessage()
 reserveListing()
 cancelTransaction()
+claimPickup()
+confirmPickupClaim()
+resolveTransaction()
 ```
 
 Future actions (not implemented):
 
 ```text
-claimPickup() [conceptual name]
-confirmPickupClaim() [conceptual name]
-resolvePickup() [restricted administrator; conceptual name]
 submitReview()
 blockUser()
 reportListing()
@@ -431,7 +431,8 @@ Listing must remain RESERVED
 Accounts, seller activation, Shops, Listings, messaging backend and the
 reservation/cancellation foundation are implemented locally. Seller UI coverage
 is separate from backend support. Pickup claims, seller confirmation and restricted
-administrator resolution are approved future work, not implemented operations.
+administrator resolution are implemented by Migration 005. Notification delivery
+and public dispute-entry UI remain outside the implemented backend scope.
 See [Roadmap](ROADMAP.md) and [migration guides](migrations/README.md).
 
 ## Messaging operations (Migration 003)
@@ -505,38 +506,51 @@ Lock order is Listing -> Transaction -> Conversation when applicable. Direct
 client writes to Transactions/events are revoked; RLS permits participant reads.
 The append-only audit event and Listing change share the RPC database transaction.
 
-### Explicitly not enabled by the foundation
+## Pickup lifecycle extension (Migration 005, implemented locally)
 
-No pickup-claim, seller-confirmation or administrator-resolution RPC exists.
-No automatic completion or time-only finalization is permitted.
-Although the status enum reserves those names, a CHECK constraint and transition
-guard allow only RESERVED/CANCELLED in this phase. A future migration must add
-approved policies, metadata and transitions. The legacy enum names do not define the approved future pickup flow.
-
-### Buyer pickup claim and seller confirmation (approved, not implemented)
-
-Conceptual actions below are product contracts, not existing RPC signatures.
-
-| Action | Actor | Required behavior |
+| RPC | Actor | Transition / result |
 |---|---|---|
-| Claim pickup | Buyer participant | Record the buyer's claim and audit event; do not complete the Transaction or sell the Listing |
-| Confirm pickup claim | Seller participant | Validate a pending buyer claim; atomically complete Transaction, mark Listing SOLD, conclude Conversations and record audit evidence |
-| Resolve contested/unresolved pickup | Explicitly authorized administrator | Review evidence and record justification; use only a separately approved transition and preserve immutable history |
+| `claim_pickup(p_transaction_id)` | Buyer participant | RESERVED -> compatibility pending state; Listing remains RESERVED; claim audit and notification intent |
+| `confirm_pickup_claim(p_transaction_id)` | Seller participant | Pending -> COMPLETED; Listing SOLD; Conversations concluded; audit event |
+| `resolve_transaction(p_transaction_id, p_request_id, p_outcome, p_reason, p_evidence_references, p_review_findings)` | Active operator-allowlisted administrator, not either participant | Active Transaction -> COMPLETED or CANCELLED; private reviewed evidence and immutable audit |
 
-No automatic completion timeout or time-only seller finalization is allowed.
-Silence does not confirm receipt. Notifications or escalation deadlines, if later
-introduced, must not themselves complete a Transaction.
+The compatibility pending state is the unchanged SQL enum value
+`awaiting_buyer_confirmation`, meaning buyer claim awaiting SELLER confirmation.
+No timer can complete the Transaction. No confirmation deadline is stored.
 
-All future operations must derive the actor from authenticated identity, enforce
-participant/admin authorization, validate state, prevent duplicate transitions,
-and commit lifecycle changes and immutable audit events atomically. Exact retries
-must not manufacture a second claim or completion. Administrator resolution must
-record actor, server time, prior/new state, justification and evidence references;
-it must preserve original claims, messages and earlier events.
+New lifecycle actions require both participant accounts ACTIVE, Shop ACTIVE,
+seller selling enabled, Listing RESERVED and moderation CLEAR (owner-confirmed
+2026-11-24). Administrator cancellation also uses this gate and returns ACTIVE
+only when eligible; it has no moderation/account override. Administrator completion
+requires a recorded buyer claim and accepts pending/DISPUTED state. An unclaimed
+RESERVED transaction cannot be completed by administrator resolution; it can
+still be cancelled through the existing participant operation or by an administrator.
 
-Still unresolved: exact state/RPC names, evidence requirements and access/retention,
-allowed admin outcomes, administrator role assignment, second-review requirements,
-claim withdrawal and cancellation boundaries, and account/shop/moderation rules
-for these new actions. Do not invent those details or enable a general status-
-update escape hatch. Existing reservation request UUIDs, 1,000-character cancellation
-reasons and approved cancellation restrictions remain authoritative.
+Ordinary cancel_transaction remains unchanged and RESERVED-only. A claim has no
+withdrawal RPC. No public dispute-initiation operation is added. These boundaries
+preserve the existing restriction and durable reservation/cancellation contracts.
+
+A claim or seller-confirmation retry returns the original receipt rather than
+creating another transition. Administrator requests use a caller-generated UUID;
+exact repeats must retain transaction, outcome, normalized reason, ordered evidence
+references and normalized review findings. Reusing a UUID for a different decision
+fails. Failed calls roll back state, audit, private evidence and notification intents.
+Locks are acquired Listing first, then Transaction, matching the existing foundation.
+
+Administrator justification requires 10 non-whitespace characters (maximum 1,000
+stored characters), review findings 20 (maximum 4,000), and 1–20 nonblank evidence
+reference strings of at most 1,000 characters each. These are input validation
+minimums, not an automated evidence-sufficiency judgment. Only the authorized
+reviewer attests to actual review. Private evidence/allowlist/outbox tables have no
+API-role grants and are not exposed as Data API schemas. See the
+[Migration 005 guide](migrations/MIGRATION_005_README.md) for provisioning and limits.
+
+### Notification integration boundary
+
+private.transaction_notification_outbox records the initial seller intent atomically.
+The operator-only private.enqueue_transaction_followups() creates configured reminder
+and administrator-escalation intents. Both intervals default to NULL. No job or
+external delivery is installed; production timing and delivery adapter approval
+remain outstanding. Delivery must recheck pending state and deduplicate by intent ID.
+Escalation itself does not change transaction status or grant administrator authority.
+Confidential evidence is not embedded in notification payloads.

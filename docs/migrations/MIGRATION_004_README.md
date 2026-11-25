@@ -1,5 +1,7 @@
 # Migration 004 — reserve/cancel foundation
 
+Forward extension: [Migration 005](MIGRATION_005_README.md) now adds pickup claims, seller confirmation and restricted administrator resolution. The foundation-specific scope and deferred statements below describe Migration 004 itself.
+
 Implemented and applied locally on 2026-11-11. No production action performed.
 
 ## Files and migration order

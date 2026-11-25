@@ -1,3 +1,4 @@
+import { ContactSeller } from '@/components/transactions/conversation-pages';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { publicListing, publicShop, imageRoute } from '@/lib/public-queries';
@@ -18,7 +19,7 @@ export default async function ListingPage({ params }: { params: Promise<{ listin
         <p className="muted">Condition: {(listing.condition || 'not specified').replaceAll('_',' ')}</p>
         <h2>Description</h2><p className="preserve-lines">{listing.description || 'No description provided.'}</p>
         <div className="seller-mini"><div className="shop-avatar">{shop.display_name.slice(0,1).toUpperCase()}</div><div><strong>{shop.display_name}</strong><div><Link href={`/shop/${shop.id}`}>Visit shop →</Link></div></div></div>
-        <p className="help">Messaging and pickup arrangements are planned for the next vertical slice.</p>
+        <ContactSeller listingId={listing.id} />
       </div></div>
   </section>;
 }

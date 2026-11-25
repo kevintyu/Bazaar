@@ -89,7 +89,7 @@ Important rules:
 Core Transaction states:
 
 - `RESERVED`
-- pending seller confirmation of a buyer pickup claim (exact state name TBD)
+- pending seller confirmation of a buyer pickup claim (legacy SQL value: `awaiting_buyer_confirmation`)
 - `COMPLETED`
 - `CANCELLED`
 - `DISPUTED`
@@ -103,9 +103,10 @@ Important rules:
 - No automatic completion timeout or time-only seller finalization is allowed.
 - Administrator resolution requires explicit authorization, reviewed evidence,
   justification and immutable actor/time/state-transition audit records.
-- Exact resolution outcomes and evidence rules remain unresolved.
-- Pickup/confirmation/admin resolution are not yet implemented; the applied
-  database legacy enum must not be silently renamed.
+- Migration 005 enables evidence-backed administrator completion/cancellation;
+  completion requires a buyer claim, no self-resolution, and eligibility checks.
+- Evidence sufficiency, second review, retention and external notification delivery
+  remain operational decisions. The legacy enum must not be silently renamed.
 
 ## Conversations
 
@@ -230,8 +231,9 @@ Especially protect against partial state updates.
 
 Implemented locally: seller/listing vertical slice, messaging backend, and the
 reservation/cancellation foundation. The product UI does not expose every backend
-capability. Pickup claims, seller confirmation and restricted administrator
-resolution remain approved but unimplemented work.
+capability. Migration 005 implements pickup claims, seller confirmation and
+restricted administrator resolution locally. Notification intents are durable;
+external delivery and public dispute initiation are not implemented.
 
 The Domain Model and Domain Operations are authoritative product sources.
 Use [docs/README.md](docs/README.md) for documentation navigation and

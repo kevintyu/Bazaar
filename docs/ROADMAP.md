@@ -1,6 +1,6 @@
 # Marketplace roadmap
 
-Status: 2026-11-15. Local development evidence only; no production readiness claim.
+Status: 2026-11-25. Local development evidence only; no production readiness claim.
 Product authority: [Domain Model](DOMAIN_MODEL.md) and [Domain Operations](DOMAIN_OPERATIONS.md).
 
 ## Implemented locally
@@ -11,30 +11,38 @@ Product authority: [Domain Model](DOMAIN_MODEL.md) and [Domain Operations](DOMAI
 - Messaging backend, participant isolation, retained history, inbox state and Realtime.
 - Reservation/cancellation foundation with request UUID retries and immutable audit history.
 - Anonymous Realtime isolation correction.
+- My Purchases, My Sales and participant transaction details; minimal chat and seller reservation UI.
 
 See [migration guides](migrations/README.md) and [validation evidence](validation/README.md).
-Backend support does not imply a product messaging or transaction UI exists.
+The participant UI is documented in [transaction UI validation](validation/TRANSACTION_UI_VALIDATION.md).
+Administrator resolution remains backend-only.
 
-## Approved direction, not implemented
+## Lifecycle backend implemented by Migration 005
 
 - Buyer initiates a pickup claim; a claim alone does not complete a sale.
 - Seller confirms the buyer claim; completion and Listing SOLD must be atomic.
 - No automatic completion timeout or completion authorized solely by elapsed time.
 - Restricted administrator resolution requires authorization, reviewed evidence,
   justification and immutable audit records; no arbitrary status override.
-- Product messaging/transaction UI remains separate implementation work.
+- Participant pickup/confirmation UI is implemented; administrator UI is deferred.
 
-## Decisions required before lifecycle implementation
+## Remaining integration and policy decisions
 
-- Exact claim/pending-state/RPC names and withdrawal/cancellation boundaries.
-- Administrator roles, allowed outcomes and transitions, evidence sufficiency,
-  evidence access/retention, and whether second review is required.
-- Account, Shop, moderation and blocking restrictions during claim/confirmation/resolution.
-- Optional reminders/escalation without time-based completion.
+- Participant-safe historical listing summaries and counterparty display names. Existing
+  policies do not provide buyer access to reserved/sold listing details or seller
+  access to buyer profiles; the UI uses explicit fallbacks without widening access.
+
+- Any future claim-withdrawal or public dispute-entry operation.
+- Evidence sufficiency, evidence access/retention, review tooling, and whether
+  second review is required; the current backend enforces an operator allowlist.
+- Additional blocking policy; current lifecycle actions already enforce the
+  owner-approved account/Shop/moderation restrictions.
+- Reminder/escalation cadence and external delivery adapter. Timing defaults
+  to disabled; durable intents and a trusted explicit enqueue function exist.
 - Negotiated-price/receipt snapshots and cancellation-reason taxonomy.
 
-Only after those contracts are settled should a separately authorized forward-only
-extension be designed and tested. Do not reuse the superseded full Migration 004 candidate.
+See [Migration 005](migrations/MIGRATION_005_README.md) for implemented contracts
+and limits. Do not reuse the superseded full Migration 004 candidate.
 
 ## Deferred features and launch work
 
